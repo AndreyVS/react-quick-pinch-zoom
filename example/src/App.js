@@ -9,12 +9,11 @@ import { getDemoComponentById, DEFAULT_ID } from "./data";
 class App extends Component {
   state = {
     demoId: DEFAULT_ID,
-    demoComponent: null
-  };
+    demoComponent: null  
+  };  
 
   renderDemo() {
     const Comp = this.state.demoComponent;
-
     return Comp ? <Comp /> : <Spinner />;
   }
 
@@ -26,7 +25,7 @@ class App extends Component {
     });
   };
 
-  componentDidMount(): void {
+  componentDidMount() {
     this.onChange(this.state.demoId);
   }
 

@@ -4,6 +4,7 @@ import { styleRoot, styleChild, styles } from './styles.css';
 import { Interaction, Point } from '../types';
 import { isTouch } from '../utils';
 import { AnimateOptions, ScaleToOptions, Props, DefaultProps } from './types';
+//import { useSwipeable } from 'react-swipeable';
 
 const classnames = (base: string, other?: string): string =>
   other ? `${base} ${other}` : base;
@@ -155,6 +156,7 @@ class PinchZoom extends React.Component<Props> {
   private _wheelTimeOut: NodeJS.Timeout | null = null;
   private _zoomFactor: number = 1;
   private _initialZoomFactor: number = 1;
+  // private _currentZoom: number = 1;
   // It help reduce behavior difference between touch and mouse events
   private _ignoreNextClick: boolean = false;
   // @ts-ignore
@@ -283,6 +285,16 @@ class PinchZoom extends React.Component<Props> {
     this._end();
   }
 
+  // private _isMaxZoom() {
+  //   if(this.props.maxZoom >= this._currentZoom) {
+  //     this._currentZoom = this.props.minZoom;
+  //     return true;
+  //   } else {
+  //     this._currentZoom++
+  //     return false
+  //   }
+  // }
+
   private _handleDoubleTap(event: TouchEvent) {
     if (this._hasInteraction) {
       return;
@@ -294,21 +306,29 @@ class PinchZoom extends React.Component<Props> {
 
     const zoomFactor = this._zoomFactor + this.props.tapZoomFactor;
     const startZoomFactor = this._zoomFactor;
+
     const updateProgress = (progress: number) => {
       this._scaleTo(
         startZoomFactor + progress * (zoomFactor - startZoomFactor),
         center,
       );
     };
+
     let center = this._getOffsetByFirstTouch(event);
 
     this._isDoubleTap = true;
+
+    console.log(`startZoomFactor: ${startZoomFactor}, zoomFactor: ${zoomFactor}`)
 
     if (startZoomFactor > zoomFactor) {
       center = this._getCurrentZoomCenter();
     }
 
-    this._animate(updateProgress);
+    if (startZoomFactor === this.props.maxZoom) {
+      this.scaleTo({x: 0, y: 0, scale: 1})      
+    } else {
+      this._animate(updateProgress);
+    }
   }
 
   private _computeInitialOffset() {
@@ -434,7 +454,6 @@ class PinchZoom extends React.Component<Props> {
 
       this._zoomFactor = startZoomFactor + diffZoomFactor * progress;
       this._offset = { x, y };
-
       this._update();
     };
 
@@ -445,7 +464,7 @@ class PinchZoom extends React.Component<Props> {
     this._scale(zoomFactor / this._zoomFactor, center);
   }
 
-  private _scale(scale: number, center: Point) {
+   private _scale(scale: number, center: Point) {
     scale = this._scaleZoomFactor(scale);
 
     this._addOffset({

@@ -60,5 +60,8 @@
     "reactjs",
     "touch",
     "zoom"
-  ]
+  ],
+  "dependencies": {
+    "react-swipeable": "^6.1.0"
+  }
 }

@@ -4,7 +4,7 @@ import QuickPinchZoom, {
   make2dTransformValue,
   make3dTransformValue,
   hasTranslate3DSupport
-} from "react-quick-pinch-zoom";
+} from "../../../../esm";
 
 const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 
@@ -13,9 +13,8 @@ const use3DTransform = hasTranslate3DSupport() && !isSafari;
 const makeTransformValue = use3DTransform
   ? make3dTransformValue
   : make2dTransformValue;
-
 class Base extends Component {
-  innerRef = createRef();
+  innerRef = createRef(); 
 
   onUpdate = ({ x, y, scale }) => {
     const { current: div } = this.innerRef;
@@ -44,7 +43,7 @@ class Base extends Component {
   render() {
     const { Child, quickPinchZoomRef, ...props } = this.props;
 
-    return (
+    return ( 
       <QuickPinchZoom
         {...props}
         ref={quickPinchZoomRef}

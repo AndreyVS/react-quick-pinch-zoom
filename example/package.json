@@ -9,7 +9,8 @@
     "prop-types": ">=15.0.0",
     "react": ">=16.4.0",
     "react-dom": ">=16.4.0",
-    "react-quick-pinch-zoom": "../."
+    "react-quick-pinch-zoom": "file:../.",
+    "react-swipeable": "^6.1.0"
   },
   "devDependencies": {
     "@babel/core": "^7.0.0-0",
