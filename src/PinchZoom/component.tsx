@@ -4,7 +4,6 @@ import { styleRoot, styleChild, styles } from './styles.css';
 import { Interaction, Point } from '../types';
 import { isTouch } from '../utils';
 import { AnimateOptions, ScaleToOptions, Props, DefaultProps } from './types';
-//import { useSwipeable } from 'react-swipeable';
 
 const classnames = (base: string, other?: string): string =>
   other ? `${base} ${other}` : base;
@@ -123,6 +122,8 @@ class PinchZoom extends React.Component<Props> {
     onZoomEnd: noup,
     onZoomStart: noup,
     onZoomUpdate: noup,
+    onSwipeLeft: noup,
+    onSwipeRight: noup,
     setOffsetsOnce: false,
     shouldInterceptWheel,
     tapZoomFactor: 1,
@@ -156,7 +157,8 @@ class PinchZoom extends React.Component<Props> {
   private _wheelTimeOut: NodeJS.Timeout | null = null;
   private _zoomFactor: number = 1;
   private _initialZoomFactor: number = 1;
-  // private _currentZoom: number = 1;
+  private _initialX : number = 0;
+  private _initialY : number = 0;
   // It help reduce behavior difference between touch and mouse events
   private _ignoreNextClick: boolean = false;
   // @ts-ignore
@@ -182,6 +184,10 @@ class PinchZoom extends React.Component<Props> {
     this._lastDragPosition = null;
     this._hasInteraction = true;
     this._handleDrag(event);
+  }
+
+  private _resetScreen() {
+    this.scaleTo({x: 0, y: 0, scale: 1}) 
   }
 
   private _handleDrag(event: TouchEvent) {
@@ -285,16 +291,6 @@ class PinchZoom extends React.Component<Props> {
     this._end();
   }
 
-  // private _isMaxZoom() {
-  //   if(this.props.maxZoom >= this._currentZoom) {
-  //     this._currentZoom = this.props.minZoom;
-  //     return true;
-  //   } else {
-  //     this._currentZoom++
-  //     return false
-  //   }
-  // }
-
   private _handleDoubleTap(event: TouchEvent) {
     if (this._hasInteraction) {
       return;
@@ -325,7 +321,7 @@ class PinchZoom extends React.Component<Props> {
     }
 
     if (startZoomFactor === this.props.maxZoom) {
-      this.scaleTo({x: 0, y: 0, scale: 1})      
+      this._resetScreen();  
     } else {
       this._animate(updateProgress);
     }
@@ -464,7 +460,7 @@ class PinchZoom extends React.Component<Props> {
     this._scale(zoomFactor / this._zoomFactor, center);
   }
 
-   private _scale(scale: number, center: Point) {
+  private _scale(scale: number, center: Point) {
     scale = this._scaleZoomFactor(scale);
 
     this._addOffset({
@@ -789,6 +785,37 @@ class PinchZoom extends React.Component<Props> {
     this._setInteraction(null, event);
   }
 
+  private _startTouchSwipe(e: TouchEvent) {
+    this._initialX = e.touches[0].clientX;
+    this._initialY = e.touches[0].clientY;
+  };
+
+  private _moveTouchSwipe(e: TouchEvent) {
+    if (this._initialX === 0) {
+      return;
+    }
+
+    if (this._initialY === 0) {
+      return;
+    }
+
+    let currentX = e.touches[0].clientX;
+    let currentY = e.touches[0].clientY;
+
+    let diffX = this._initialX - currentX;
+    let diffY = this._initialY - currentY;
+
+    if (Math.abs(diffX) > Math.abs(diffY)) {
+      if (diffX > 0) {
+        this.props.onSwipeLeft();
+      } else {
+        this.props.onSwipeRight();
+      }  
+    }
+
+    cancelEvent(e);
+  }
+
   private _detectDoubleTap(event: TouchEvent) {
     const time = new Date().getTime();
 
@@ -798,7 +825,7 @@ class PinchZoom extends React.Component<Props> {
 
     if (time - this._lastTouchStart < 300) {
       cancelEvent(event);
-
+    
       this._handleDoubleTap(event);
 
       if (isZoomInteraction(this._interaction)) {
@@ -826,6 +853,7 @@ class PinchZoom extends React.Component<Props> {
     (touchStartEvent: TouchEvent) => {
       this._firstMove = true;
       this._fingers = touchStartEvent.touches.length;
+      this._startTouchSwipe(touchStartEvent);
       this._detectDoubleTap(touchStartEvent);
     },
   );
@@ -848,6 +876,8 @@ class PinchZoom extends React.Component<Props> {
         this._startTouches = getPageCoordinatesByTouches(
           touchMoveEvent.touches,
         );
+
+
       } else {
         if (isZoomInteraction(this._interaction)) {
           if (
@@ -864,6 +894,7 @@ class PinchZoom extends React.Component<Props> {
             );
           }
         } else if (isDragInteraction(this._interaction)) {
+          this._moveTouchSwipe(touchMoveEvent)
           this._handleDrag(touchMoveEvent);
         }
         if (this._interaction) {
@@ -1021,6 +1052,8 @@ if (process.env.NODE_ENV !== 'production') {
     onZoomEnd: func,
     onZoomStart: func,
     onZoomUpdate: func,
+    onSwipeLeft: func,
+    onSwipeRight: func,
     setOffsetsOnce: bool,
     tapZoomFactor: number,
     verticalPadding: number,

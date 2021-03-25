@@ -1,6 +1,6 @@
 {
-  "name": "react-quick-pinch-zoom",
-  "version": "4.0.2",
+  "name": "react-quick-pinch-zoom-with-swipe",
+  "version": "4.1.2",
   "main": "cmj/index.js",
   "module": "esm/index.js",
   "types": "esm/index.d.ts",
@@ -47,9 +47,9 @@
     "!*.test.*"
   ],
   "description": "A react component that providing multi-touch gestures for zooming and dragging on any DOM element.",
-  "author": "David Nrb <offantik@gmail.com>",
+  "author": "David Nrb <offantik@gmail.com>, swipe added by K3ler <ikeler1@gmail.com> ",
   "license": "MIT",
-  "repository": "retyui/react-quick-pinch-zoom",
+  "repository": "K3ler/react-quick-pinch-zoom",
   "keywords": [
     "drag",
     "gesture",
@@ -59,9 +59,7 @@
     "react",
     "reactjs",
     "touch",
-    "zoom"
-  ],
-  "dependencies": {
-    "react-swipeable": "^6.1.0"
-  }
+    "zoom",
+    "swipe"
+  ]
 }
