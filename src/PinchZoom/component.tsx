@@ -157,8 +157,16 @@ class PinchZoom extends React.Component<Props> {
   private _wheelTimeOut: NodeJS.Timeout | null = null;
   private _zoomFactor: number = 1;
   private _initialZoomFactor: number = 1;
-  private _initialX : number = 0;
-  private _initialY : number = 0;
+  private _swipeX : number = 0;
+  private _swipeY : number = 0;
+  private _swipeTime : number = 0;
+  private _swipeDistX : number = 0;
+  private _swipeDistY : number = 0;
+  private _swipeThreshold: number = 150;
+  private _swipeRestraint: number = 100;
+  private _swipeAllowedTime: number = 300;
+  private _swipeElapsedTime: number;
+
   // It help reduce behavior difference between touch and mouse events
   private _ignoreNextClick: boolean = false;
   // @ts-ignore
@@ -313,8 +321,6 @@ class PinchZoom extends React.Component<Props> {
     let center = this._getOffsetByFirstTouch(event);
 
     this._isDoubleTap = true;
-
-    console.log(`startZoomFactor: ${startZoomFactor}, zoomFactor: ${zoomFactor}`)
 
     if (startZoomFactor > zoomFactor) {
       center = this._getCurrentZoomCenter();
@@ -785,35 +791,12 @@ class PinchZoom extends React.Component<Props> {
     this._setInteraction(null, event);
   }
 
-  private _startTouchSwipe(e: TouchEvent) {
-    this._initialX = e.touches[0].clientX;
-    this._initialY = e.touches[0].clientY;
-  };
-
-  private _moveTouchSwipe(e: TouchEvent) {
-    if (this._initialX === 0) {
-      return;
-    }
-
-    if (this._initialY === 0) {
-      return;
-    }
-
-    let currentX = e.touches[0].clientX;
-    let currentY = e.touches[0].clientY;
-
-    let diffX = this._initialX - currentX;
-    let diffY = this._initialY - currentY;
-
-    if (Math.abs(diffX) > Math.abs(diffY)) {
-      if (diffX > 0) {
-        this.props.onSwipeLeft();
-      } else {
-        this.props.onSwipeRight();
-      }  
-    }
-
-    cancelEvent(e);
+  private _swipeTouchStart(event: TouchEvent) {
+    let touch = event.changedTouches[0]
+    this._swipeX = touch.pageX
+    this._swipeY = touch.pageY
+    this._swipeTime = new Date().getTime() // record time when finger first makes contact with surface
+    event.preventDefault()
   }
 
   private _detectDoubleTap(event: TouchEvent) {
@@ -842,9 +825,57 @@ class PinchZoom extends React.Component<Props> {
     }
   }
 
+  private _handleSwipe(swipe : any) {
+    if (swipe === null) {
+      return;
+    }
+    
+    if (swipe === 'left') {
+      this.props.onSwipeRight();
+    }
+    
+    if (swipe === 'right') {
+      this.props.onSwipeLeft();
+    }
+
+    this._resetScreen();
+    this._resetInertia();
+  }
+
+  private _resetSwipeVariable() {
+    this._swipeX = 0;
+    this._swipeY = 0;
+    this._swipeTime = 0;
+    this._swipeDistX = 0;
+    this._swipeDistY = 0;
+    this._swipeThreshold = 150;
+    this._swipeRestraint = 100;
+    this._swipeAllowedTime = 300;
+    this._swipeElapsedTime = 0;
+  }
+
+  private _endTouchSwipe(event : TouchEvent) {
+    let touch = event.changedTouches[0]
+    this._swipeDistX = touch.pageX - this._swipeX 
+    this._swipeDistY = touch.pageY - this._swipeY 
+    this._swipeElapsedTime = new Date().getTime() - this._swipeTime;
+    let swipe = null;
+
+    if (this._swipeElapsedTime <= this._swipeAllowedTime) { 
+        if (Math.abs(this._swipeDistX) >= this._swipeThreshold && Math.abs(this._swipeDistY) <= this._swipeRestraint) {
+            swipe = (this._swipeDistX < 0) ? 'left' : 'right';
+        }
+    }
+    this._handleSwipe(swipe)
+    this._resetSwipeVariable();
+
+    cancelEvent(event);
+  }
+
   private _handlerOnTouchEnd = this._handlerIfEnable(
     (touchEndEvent: TouchEvent) => {
       this._fingers = touchEndEvent.touches.length;
+      this._endTouchSwipe(touchEndEvent);
       this._updateInteraction(touchEndEvent);
     },
   );
@@ -853,7 +884,8 @@ class PinchZoom extends React.Component<Props> {
     (touchStartEvent: TouchEvent) => {
       this._firstMove = true;
       this._fingers = touchStartEvent.touches.length;
-      this._startTouchSwipe(touchStartEvent);
+
+      this._swipeTouchStart(touchStartEvent);
       this._detectDoubleTap(touchStartEvent);
     },
   );
@@ -894,7 +926,6 @@ class PinchZoom extends React.Component<Props> {
             );
           }
         } else if (isDragInteraction(this._interaction)) {
-          this._moveTouchSwipe(touchMoveEvent)
           this._handleDrag(touchMoveEvent);
         }
         if (this._interaction) {
