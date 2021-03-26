@@ -679,6 +679,7 @@ class PinchZoom extends React.Component<Props> {
 
   private _onResize = () => {
     this._updateInitialZoomFactor();
+    this._resetScreen();
     this._setupOffsets();
     this._update();
   };
@@ -791,11 +792,19 @@ class PinchZoom extends React.Component<Props> {
     this._setInteraction(null, event);
   }
 
+  private _canSwipe(event: TouchEvent) {
+    return event.changedTouches ? true : false;
+  }
+
   private _swipeTouchStart(event: TouchEvent) {
+
     let touch = event.changedTouches[0]
+
+    // @ts-ignore
     this._swipeX = touch.pageX
+    // @ts-ignore
     this._swipeY = touch.pageY
-    this._swipeTime = new Date().getTime() // record time when finger first makes contact with surface
+    this._swipeTime = new Date().getTime()
     event.preventDefault()
   }
 
@@ -855,8 +864,11 @@ class PinchZoom extends React.Component<Props> {
   }
 
   private _endTouchSwipe(event : TouchEvent) {
-    let touch = event.changedTouches[0]
+    let touch = event.changedTouches[0];
+
+    // @ts-ignore
     this._swipeDistX = touch.pageX - this._swipeX 
+    // @ts-ignore
     this._swipeDistY = touch.pageY - this._swipeY 
     this._swipeElapsedTime = new Date().getTime() - this._swipeTime;
     let swipe = null;
@@ -875,7 +887,11 @@ class PinchZoom extends React.Component<Props> {
   private _handlerOnTouchEnd = this._handlerIfEnable(
     (touchEndEvent: TouchEvent) => {
       this._fingers = touchEndEvent.touches.length;
-      this._endTouchSwipe(touchEndEvent);
+
+      if (this._canSwipe(touchEndEvent )) {
+        this._endTouchSwipe(touchEndEvent );
+      }
+
       this._updateInteraction(touchEndEvent);
     },
   );
@@ -885,7 +901,10 @@ class PinchZoom extends React.Component<Props> {
       this._firstMove = true;
       this._fingers = touchStartEvent.touches.length;
 
-      this._swipeTouchStart(touchStartEvent);
+      if (this._canSwipe(touchStartEvent)) {
+        this._swipeTouchStart(touchStartEvent);
+      }
+
       this._detectDoubleTap(touchStartEvent);
     },
   );
@@ -966,6 +985,7 @@ class PinchZoom extends React.Component<Props> {
   }
 
   private _handlerWheel = (wheelEvent: WheelEvent) => {
+
     if (this.props.shouldInterceptWheel(wheelEvent)) {
       return;
     }
